@@ -11,6 +11,11 @@ dog_license_df <- read.csv('../output/cleaned_dog_license.csv', stringsAsFactors
 dog_bite_df <- read.csv('../output/cleaned_dog_bite.csv', stringsAsFactors=FALSE)
 hospital_df <- read.csv('../output/cleaned_hospital.csv',stringsAsFactors=FALSE)
 
+server_nyc_zip_geo <- geojson_read("../data/geo/NYC-Zip-Code.geojson", what = "sp")
+server_nyc_nei_geo <- geojson_read("../data/geo/NYC-Neighborhood.geojson", what = "sp")
+server_nyc_bor_geo <- geojson_read("../data/geo/NYC-Borough-Boundaries.geojson", what = "sp")
+
+
 
 # labels and icons template
 hospital_popup <- sprintf(
@@ -60,16 +65,36 @@ redraw_danger_map <- function(mapobj, density_geo, label_name = NULL){
 
 server <- function(input, output){
   # load geo data: 1 for each user
-  nyc_zip_geo <- geojson_read("../data/geo/NYC-Zip-Code.geojson", what = "sp")
-  nyc_nei_geo <- geojson_read("../data/geo/NYC-Neighborhood.geojson", what = "sp")
-  nyc_bor_geo <- geojson_read("../data/geo/NYC-Borough-Boundaries.geojson", what = "sp")
+  nyc_zip_geo <- server_nyc_zip_geo
+  nyc_nei_geo <- server_nyc_nei_geo
+  nyc_bor_geo <- server_nyc_bor_geo
 
 
   # Section 1: normal plots
-  output$top5bitedogs <- renderPlot({
+  
+  get_filtered_zip_bite_df <- reactive({
+    filtered_zip_bite_df <- dog_bite_df
+    if(input$bite_zip != "All"){
+        filtered_zip_bite_df <- filtered_zip_bite_df %>% 
+        filter(ZipCode==input$bite_zip) 
+    }
     
+    return(filtered_zip_bite_df)
+  })
+
+  output$zip_top5_bite <- renderPlot({
+    # get data
+    filtered_zip_bite_df <- get_filtered_zip_bite_df() %>% 
+        group_by(Breed) %>% tally()
+        names(filtered_zip_bite_df) <- c("Breed", "density")
+    # count
+    top5_bite_df <- filtered_zip_bite_df[order(filtered_zip_bite_df$density,decreasing = TRUE),][1:5,]
+    barplot(top5_bite_df$density, names.arg = top5_bite_df$Breed, cex.names = 0.7, main = paste("Top 5 Bite Dogs in ", input$bite_zip), las = 2 )
   })
     
+
+
+
   # Section2: Density 
   ## 2.1 reactive data for Density
   switched_density_geo <- reactive({
@@ -78,7 +103,7 @@ server <- function(input, output){
   })
   # filter density reactive data
   get_filtered_density_df <- reactive({
-    filtered_density_df <- dog_license_df[,]
+    filtered_density_df <- dog_license_df
     # filter gender
     if(input$density_gender != "All"){
       filtered_density_df <- filtered_density_df %>%

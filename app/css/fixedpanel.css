@@ -1,0 +1,26 @@
+.panel-fixed{
+    background-color: white;
+    border-radius: 20px;
+}
+.panel-fixed:hover,
+.panel-fixed:hover select,
+.panel-fixed:hover img{
+    opacity: 1;
+}
+
+.panel-fixed,
+.panel-fixed select,
+.panel-fixed img{
+    opacity: 0.7;
+}
+
+
+.panel-fixed .shiny-input-container{
+    text-align: center;
+}
+
+.panel-fixed .control-label{
+    color:black;
+}
+
+

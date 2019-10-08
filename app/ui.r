@@ -5,13 +5,13 @@ library(shinythemes)
 # Select items
 breed_names <- readRDS('../output/select_items/breeds.rds')
 nyc_zipcode <- readRDS('../output/select_items/nyc_zipcode.rds')
-neighborhood_names <- readRDS('../output/select_items/neighborhood.rds')
-borough <- readRDS('../output/select_items/borough.rds')
+# neighborhood_names <- readRDS('../output/select_items/neighborhood.rds')
+# borough <- readRDS('../output/select_items/borough.rds')
 
 breed_names <- c('All', breed_names)
 nyc_zipcode <- c('All', nyc_zipcode)
-neighborhood_names <- c('All', neighborhood_names)
-borough <- c('All', borough)
+# neighborhood_names <- c('All', neighborhood_names)
+# borough <- c('All', borough)
 
 
 # UI Part
@@ -37,7 +37,7 @@ ui <- navbarPage( "Love Dogs!",
                              ),
                              
                              mainPanel = mainPanel(
-                               leafletOutput("densitymap", height= 600)
+                               leafletOutput("densitymap", height= 700)
                              )
                            )
                   ),
@@ -57,33 +57,38 @@ ui <- navbarPage( "Love Dogs!",
                              ),
                              # right panel
                              mainPanel = mainPanel(
+                                includeCSS("./css/fixedpanel.css"),
                                # map 
-                               leafletOutput("dangermap", height = 600)
+                               leafletOutput("dangermap", height = 700),
                                # fixed plot
-                              #  absolutePanel(id="dangerstats", fixed = TRUE,
-                              #                draggable = FALSE, top = 150, right = 20,
-                              #                width = 200, height = "auto",
+                               
+                                absolutePanel(id="dangerstats", fixed = FALSE,
+                                            class ="panel-fixed",
+                                             draggable = FALSE, top = 30, right = 20,
+                                             width = 300, height = "auto",
                                              
-                              #                #titlePanel("Top 5 Bite Dogs!"),
-                              #                selectInput("dangerzip", "ZipCode:", nyc_zipcode),
-                              #                plotOutput("top5bitedogs", height = 200)
-                              #  )                 
+                                             #titlePanel("Top 5 Bite Dogs!"),
+                                             selectInput("bite_zip", "ZipCode:", nyc_zipcode),
+                                             plotOutput("zip_top5_bite", height = 350)
+                               
+                               )                 
                              )
                            )
-                  ),
-                  
-                  # 3. parks feature
-                  tabPanel("Walk Dogs",
-                           sidebarLayout(
-                             sidebarPanel(
-                               
-                             ),
-                             
-                             mainPanel(
-                               leafletOutput("parkmap", height = 600)
-                               
-                             )
-                           )
-                           
                   )
+                  # ,
+                  
+                  # # 3. parks feature
+                  # tabPanel("Walk Dogs",
+                  #          sidebarLayout(
+                  #            sidebarPanel(
+                               
+                  #            ),
+                             
+                  #            mainPanel(
+                  #              leafletOutput("parkmap", height = 600)
+                               
+                  #            )
+                  #          )
+                           
+                  # )
 )
