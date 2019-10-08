@@ -7,19 +7,6 @@ library(shinythemes)
 library(geojsonio)
 
 
-# Fixed Data To All Users: 
-# categories: 1. breeds 
-
-source("./helper.R")
-# read geo data
-source("./read_geodata.R")
-
-# setwd("~/Developer/fall2019-proj2--sec1-grp5")
-
-breeds <- readRDS(file = "../output/breeds.rds")
-breeds <- c("All", as.character(breeds))
-nyc_zipcodes <- readRDS(file = "../output/nyc-zipcode.rds")
-
 
 # UI Part
 ui <- navbarPage( "Love Dogs!",

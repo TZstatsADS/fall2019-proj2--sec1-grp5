@@ -1,42 +1,89 @@
 library(shiny)
 library(leaflet)
+library(shinythemes)
 
-# Define UI for application that draws a histogram
-shinyUI(fluidPage(
-  
-  # Application title
-  titlePanel("2009 Manhattan Housing Sales"),
-  
-  # Sidebar with a selector input for neighborhood
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("nbhd", label = h5("Choose a Manhattan Neighborhood"), 
-                         choices = list("all neighborhoods"=0,
-                                        "Central Harlem"=1, 
-                                        "Chelsea and Clinton"=2,
-                                        "East Harlem"=3, 
-                                        "Gramercy Park and Murray Hill"=4,
-                                        "Greenwich Village and Soho"=5, 
-                                        "Lower Manhattan"=6,
-                                        "Lower East Side"=7, 
-                                        "Upper East Side"=8, 
-                                        "Upper West Side"=9,
-                                        "Inwood and Washington Heights"=10), 
-                         selected = 0)
-      #sliderInput("p.range", label=h3("Price Range (in thousands of dollars)"),
-      #            min = 0, max = 20000, value = c(200, 10000))
-    ),
-    # Show two panels
-    mainPanel(
-      #h4(textOutput("text")),
-      h3(code(textOutput("text1"))),
-      tabsetPanel(
-        # Panel 1 has three summary plots of sales. 
-        tabPanel("Sales summary", plotOutput("distPlot")), 
-        # Panel 2 has a map display of sales' distribution
-        tabPanel("Sales map", plotOutput("distPlot1"))),
-      leafletOutput("map", width = "80%", height = "400px")
-    )
- )
-))
+# Select items
+breed_names <- readRDS('../output/select_items/breeds.rds')
+nyc_zipcode <- readRDS('../output/select_items/nyc_zipcode.rds')
+neighborhood_names <- readRDS('../output/select_items/neighborhood.rds')
+borough <- readRDS('../output/select_items/borough.rds')
 
+breed_names <- c('All', breed_names)
+nyc_zipcode <- c('All', nyc_zipcode)
+neighborhood_names <- c('All', neighborhood_names)
+borough <- c('All', borough)
+
+
+# UI Part
+ui <- navbarPage( "Love Dogs!",
+                  theme = shinytheme("darkly"),
+                  id="navbar",
+                  selected = "Density",
+                  
+                  
+                  # 1. Density tab
+                  tabPanel("Density",
+                           sidebarLayout(
+                             sidebarPanel = sidebarPanel(
+                               titlePanel("Dog Density"),
+                               
+                               selectInput("density_level", "Level:", c("Borough" = "borough", "Neighborhood" = "neighborhood", "Zip Code Region" = "zip"), selected = 'zip'),
+                               
+                               selectInput("density_breed", "Breed:", breed_names),
+                               selectInput("density_gender", "Dog Gender:", c("All" = "All", "Male" = "M",  "Female" = "F")),
+                               
+                               dateRangeInput("density_license_issued_date", "License Issued Date:", start="2014-09-01"),
+                               radioButtons("density_license_status", "License Status:", choices = c("All" = 1, "Valid" = 2, "Expired" = 3), selected = 1, inline = TRUE)
+                             ),
+                             
+                             mainPanel = mainPanel(
+                               leafletOutput("densitymap", height= 600)
+                             )
+                           )
+                  ),
+                  
+                  # 2. Danger zone tab
+                  tabPanel("Danger Area",
+                           sidebarLayout(
+                             sidebarPanel = sidebarPanel(
+                              titlePanel("Bite Records"),
+                              
+                              selectInput("bite_breed", "Breed:", breed_names),
+                              selectInput("bite_gender", "Dog Gender:", c("All" = "All", "Male" = "M",  "Female" = "F")),                 
+                              
+                              dateRangeInput("bite_date", "Bite Date:", start="2000-01-01"),
+                              
+                              checkboxInput("showhospital", "Show Hospital:")
+                             ),
+                             # right panel
+                             mainPanel = mainPanel(
+                               # map 
+                               leafletOutput("dangermap", height = 600)
+                               # fixed plot
+                              #  absolutePanel(id="dangerstats", fixed = TRUE,
+                              #                draggable = FALSE, top = 150, right = 20,
+                              #                width = 200, height = "auto",
+                                             
+                              #                #titlePanel("Top 5 Bite Dogs!"),
+                              #                selectInput("dangerzip", "ZipCode:", nyc_zipcode),
+                              #                plotOutput("top5bitedogs", height = 200)
+                              #  )                 
+                             )
+                           )
+                  ),
+                  
+                  # 3. parks feature
+                  tabPanel("Walk Dogs",
+                           sidebarLayout(
+                             sidebarPanel(
+                               
+                             ),
+                             
+                             mainPanel(
+                               leafletOutput("parkmap", height = 600)
+                               
+                             )
+                           )
+                           
+                  )
+)

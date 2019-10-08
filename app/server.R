@@ -1,168 +1,219 @@
 library(shiny)
-library(choroplethr)
-library(choroplethrZip)
 library(dplyr)
 library(leaflet)
-library(maps)
-library(rgdal)
+library(dplyr)
+library(geojsonio)
 
-## Define Manhattan's neighborhood
-man.nbhd=c("all neighborhoods", "Central Harlem", 
-           "Chelsea and Clinton",
-           "East Harlem", 
-           "Gramercy Park and Murray Hill",
-           "Greenwich Village and Soho", 
-           "Lower Manhattan",
-           "Lower East Side", 
-           "Upper East Side", 
-           "Upper West Side",
-           "Inwood and Washington Heights")
-zip.nbhd=as.list(1:length(man.nbhd))
-zip.nbhd[[1]]=as.character(c(10026, 10027, 10030, 10037, 10039))
-zip.nbhd[[2]]=as.character(c(10001, 10011, 10018, 10019, 10020))
-zip.nbhd[[3]]=as.character(c(10036, 10029, 10035))
-zip.nbhd[[4]]=as.character(c(10010, 10016, 10017, 10022))
-zip.nbhd[[5]]=as.character(c(10012, 10013, 10014))
-zip.nbhd[[6]]=as.character(c(10004, 10005, 10006, 10007, 10038, 10280))
-zip.nbhd[[7]]=as.character(c(10002, 10003, 10009))
-zip.nbhd[[8]]=as.character(c(10021, 10028, 10044, 10065, 10075, 10128))
-zip.nbhd[[9]]=as.character(c(10023, 10024, 10025))
-zip.nbhd[[10]]=as.character(c(10031, 10032, 10033, 10034, 10040))
 
-## Load housing data
-load("../output/count.RData")
-load("../output/mh2009use.RData")
+# load raw data
+dog_license_df <- read.csv('../output/cleaned_dog_license.csv', stringsAsFactors=FALSE)
+# cols: "X"  "UniqueID"   "DateOfBite" "Breed"      "Age"        "Gender"     "Borough"    "ZipCode"   
+dog_bite_df <- read.csv('../output/cleaned_dog_bite.csv', stringsAsFactors=FALSE)
+hospital_df <- read.csv('../output/cleaned_hospital.csv',stringsAsFactors=FALSE)
 
-# Define server logic required to draw a histogram
-shinyServer(function(input, output) {
+
+# labels and icons template
+hospital_popup <- sprintf(
+  "<strong>%s</strong><br/> Phone: %s", 
+  hospital_df$Name, hospital_df$Phone
+) %>% lapply(htmltools::HTML)
+
+hospital_icon <- makeIcon(
+  iconUrl = "https://clarkebenefits.com/wp-content/uploads/2018/07/hospital-icon.png",
+  iconWidth = 18,
+  iconHeight = 18
+)
+
+
+# independent helper functio
+source("./helper.R")
+
+# application-wide helper function
+
+# Add polygons on the 'mapobj', using 'density_geo' Data
+# return the processed mapobj
+redraw_danger_map <- function(mapobj, density_geo, label_name = NULL){
   
-  ## Neighborhood name
-  output$text = renderText({"Selected:"})
-  output$text1 = renderText({
-      paste("{ ", man.nbhd[as.numeric(input$nbhd)+1], " }")
-  })
-  
-  ## Panel 1: summary plots of time trends, 
-  ##          unit price and full price of sales. 
-  
-  output$distPlot <- renderPlot({
+  qpal <- colorNumeric(
+    palette = "YlOrRd", domain = density_geo$density
+  )       
+  mapobj %>%
+    clearShapes() %>%  # clear original polygons    
+    addPolygons(
+      color = ~qpal(density),
+      stroke = FALSE, 
+      smoothFactor = 0.3, 
+      fillOpacity = 0.8, 
+      dashArray = 3,
+      label = paste("Number:", as.character(density_geo[[label_name]])),
+      highlight = highlightOptions(
+        weight = 5,
+        color = "#ccc",
+        dashArray = "",
+        fillOpacity = 0.9,
+        bringToFront = TRUE
+      ))   %>%
+    clearControls() %>%  # clear original legends
+    addLegend("bottomright", pal = qpal, value = ~ density, title = NULL)
+}
+
+
+server <- function(input, output){
+  # load geo data: 1 for each user
+  nyc_zip_geo <- geojson_read("../data/geo/NYC-Zip-Code.geojson", what = "sp")
+  nyc_nei_geo <- geojson_read("../data/geo/NYC-Neighborhood.geojson", what = "sp")
+  nyc_bor_geo <- geojson_read("../data/geo/NYC-Borough-Boundaries.geojson", what = "sp")
+
+
+  # Section 1: normal plots
+  output$top5bitedogs <- renderPlot({
     
-    ## First filter data for selected neighborhood
-    mh2009.sel=mh2009.use
-    if(input$nbhd>0){
-      mh2009.sel=mh2009.use%>%
-                  filter(region %in% zip.nbhd[[as.numeric(input$nbhd)]])
+  })
+    
+  # Section2: Density 
+  ## 2.1 reactive data for Density
+  switched_density_geo <- reactive({
+    # switch(input$density_level, "borough" = nyc_bor_geo, "zip" = nyc_zip_geo, "neighborhood" = nyc_nei_geo )
+    switch(input$density_level, "borough" = c("bor", nyc_bor_geo), "zip" = c('zip',nyc_zip_geo), "neighborhood" =c('nei', nyc_nei_geo) )
+  })
+  # filter density reactive data
+  get_filtered_density_df <- reactive({
+    filtered_density_df <- dog_license_df[,]
+    # filter gender
+    if(input$density_gender != "All"){
+      filtered_density_df <- filtered_density_df %>%
+        filter(AnimalGender== input$density_gender)
     }
+    # filter breed
+    if(input$density_breed != "All"){
+      filtered_density_df <- filtered_density_df %>%
+        filter(BreedName == input$density_breed)
+    }
+    # filter date
+    filtered_density_df <- filtered_density_df %>%
+      filter(LicenseIssuedDate >= input$density_license_issued_date[1] & LicenseIssuedDate <= input$density_license_issued_date[2])
     
-    ## Monthly counts
-    month.v=as.vector(table(mh2009.sel$sale.month))
+    # filter license status
+    if(input$density_license_status == 2){ # valid
+      filtered_density_df <- filtered_density_df %>%
+      filter(Sys.Date() >= LicenseExpiredDate)
+    }
+    else if(input$density_license_status == 3){
+      filtered_density_df <- filtered_density_df %>%
+      filter(Sys.Date() < LicenseExpiredDate)
+    }
+    return(filtered_density_df)
+
+  })
+
+  # 2.2 output for Density
+  output$densitymap <- renderLeaflet({
+    leaflet()%>%
+      addTiles() %>%
+      setView(-74.0060,40.7128, 10)
+
+  })
+  # 2.3 proxy change for Density
+  observe({
+    level_name <- switched_density_geo()[[1]]
+    level_geo <- switched_density_geo()[[2]]
     
-    ## Price: unit (per sq. ft.) and full
-    type.price=data.frame(bldg.type=c("10", "13", "25", "28"))
-    type.price.sel=mh2009.sel%>%
-                group_by(bldg.type)%>%
-                summarise(
-                  price.mean=mean(sale.price, na.rm=T),
-                  price.median=median(sale.price, na.rm=T),
-                  unit.mean=mean(unit.price, na.rm=T),
-                  unit.median=median(unit.price, na.rm=T),
-                  sale.n=n()
-                )
-    type.price=left_join(type.price, type.price.sel, by="bldg.type")
+    if(level_name == 'bor'){
+        # geo col: boro_name   data col: Borough
+        ori_col_name <- "Borough"
+        new_col_name <- "boro_name"
+    }
+    else if(level_name == 'nei'){
+        # geo col: GEOCODE   data col: geocode
+      ori_col_name <- "geocode"
+      new_col_name <- "GEOCODE"
+    }
+    else{
+        # geo col: postalCode   data col: ZipCode      
+      ori_col_name <- "zip"
+      new_col_name <- "postalCode"
+    }
+    one_col_df <- get_one_col_df(get_filtered_density_df(), ori_col_name, new_col_name)
+    density_df <- get_group_count(one_col_df, new_col_name, new_col_name)
+    level_geo@data <- merge(density_df, level_geo@data, by = new_col_name)
+
+    redraw_danger_map(leafletProxy("densitymap", data = level_geo), level_geo, label_name='density')
+
+  })  
+
+  # Section3. Bite
+  # 3.1 bite reactive data
+  get_filtered_bite_df <- reactive({
+    filtered_bite_df <- dog_bite_df[,]
+    # filter bite gender
+    if(input$bite_gender != "All"){
+      filtered_bite_df <- filtered_bite_df %>%
+        filter(Gender== input$bite_gender)
+    }
+    # filter bite breed
+    if(input$bite_breed != "All"){
+      filtered_bite_df <- filtered_bite_df %>%
+        filter(Breed == input$bite_breed)
+    }
+    # filter date
+    filtered_bite_df <- filtered_bite_df %>%
+      filter(DateOfBite >= input$bite_date[1] & DateOfBite <= input$bite_date[2])
     
-    ## Making the plots
-    layout(matrix(c(1,1,1,1,2,2,3,3,2,2,3,3), 3, 4, byrow=T))
-    par(cex.axis=1.3, cex.lab=1.5, 
-        font.axis=2, font.lab=2, col.axis="dark gray", bty="n")
+    return(filtered_bite_df)
+  })
+
+  # 3.2 output map
+  output$dangermap <- renderLeaflet({
+    # initialize danger map 
+    one_col_df <- get_one_col_df(dog_bite_df, "ZipCode", "postalCode")
+    density_df <- get_group_count(one_col_df, "postalCode", "postalCode")
     
-    ### Sales monthly counts
-    plot(1:12, month.v, xlab="Months", ylab="Total sales", 
-         type="b", pch=21, col="black", bg="red", 
-         cex=2, lwd=2, ylim=c(0, max(month.v,na.rm=T)*1.05))
+    density_geo <- get_density_geo(density_df, nyc_zip_geo, "postalCode")
+
+    m <- leaflet(density_geo) %>%
+      addTiles() %>%
+      setView(-74.0060,40.7128, 10)
     
-    ### Price per square foot
-    plot(c(0, max(type.price[,c(4,5)], na.rm=T)), 
-         c(0,5), 
-         xlab="Price per square foot", ylab="", 
-         bty="l", type="n")
-    text(rep(0, 4), 1:4+0.5, paste(c("coops", "condos", "luxury hotels", "comm. condos"), 
-                                  type.price$sale.n, sep=": "), adj=0, cex=1.5)
-    points(type.price$unit.mean, 1:nrow(type.price), pch=16, col=2, cex=2)
-    points(type.price$unit.median, 1:nrow(type.price),  pch=16, col=4, cex=2)
-    segments(type.price$unit.mean, 1:nrow(type.price), 
-              type.price$unit.median, 1:nrow(type.price),
-             lwd=2)    
-    
-    ### full price
-    plot(c(0, max(type.price[,-1], na.rm=T)), 
-         c(0,5), 
-         xlab="Sales Price", ylab="", 
-         bty="l", type="n")
-    text(rep(0, 4), 1:4+0.5, paste(c("coops", "condos", "luxury hotels", "comm. condos"), 
-                                   type.price$sale.n, sep=": "), adj=0, cex=1.5)
-    points(type.price$price.mean, 1:nrow(type.price), pch=16, col=2, cex=2)
-    points(type.price$price.median, 1:nrow(type.price),  pch=16, col=4, cex=2)
-    segments(type.price$price.mean, 1:nrow(type.price), 
-             type.price$price.median, 1:nrow(type.price),
-             lwd=2)    
+    redraw_danger_map(m, density_geo, label_name = "density")
+  })
+
+  # 3.3 proxy change
+  observe({
+      # prepare density numbers
+    one_col_df <- get_one_col_df(get_filtered_bite_df(), "ZipCode", "postalCode")
+    density_df <- get_group_count(one_col_df, "postalCode", "postalCode")
+    density_geo <- get_density_geo(density_df, nyc_zip_geo, "postalCode")
+
+    redraw_danger_map(leafletProxy("dangermap", data = density_geo), density_geo, label_name="density")
+      
+    })    
+  observe({
+    if(input$showhospital){
+      leafletProxy("dangermap") %>%
+        addMarkers(group = "hospital", data = hospital_df, 
+                  lng = ~Longitude, lat = ~Latitude, icon = hospital_icon,
+                  popup = hospital_popup, label = ~as.character(Name))
+    }
+    else{
+      leafletProxy("dangermap") %>%
+        clearMarkers()
+    }
+  })
+
+  # Section3: set proxy map data for each part
+  
+  
+  
+  output$parkmap <- renderLeaflet({
+    leaflet()%>%
+      addTiles() %>%
+      setView(-74.0060,40.7128, 12) %>%
+      fitBounds( -74.36, 40.40, -73.2, 41.14)
   })
   
-  ## Panel 2: map of sales distribution
-  output$distPlot1 <- renderPlot({
-    count.df.sel=count.df
-    if(input$nbhd>0){
-      count.df.sel=count.df%>%
-        filter(region %in% zip.nbhd[[as.numeric(input$nbhd)]])
-    }
-    # make the map for selected neighhoods
-    
-    zip_choropleth(count.df.sel,
-                   title       = "2009 Manhattan housing sales",
-                   legend      = "Number of sales",
-                   county_zoom = 36061)
-  })
   
-  ## Panel 3: leaflet
-  output$map <- renderLeaflet({
-    count.df.sel=count.df
-    if(input$nbhd>0){
-      count.df.sel=count.df%>%
-        filter(region %in% zip.nbhd[[as.numeric(input$nbhd)]])
-    }
-    
-    # From https://data.cityofnewyork.us/Business/Zip-Code-Boundaries/i8iw-xf4u/data
-    NYCzipcodes <- readOGR("../data/ZIP_CODE_040114.shp",
-                           #layer = "ZIP_CODE", 
-                           verbose = FALSE)
-    
-    selZip <- subset(NYCzipcodes, NYCzipcodes$ZIPCODE %in% count.df.sel$region)
-    
-    # ----- Transform to EPSG 4326 - WGS84 (required)
-    subdat<-spTransform(selZip, CRS("+init=epsg:4326"))
-    
-    # ----- save the data slot
-    subdat_data=subdat@data[,c("ZIPCODE", "POPULATION")]
-    subdat.rownames=rownames(subdat_data)
-    subdat_data=
-      subdat_data%>%left_join(count.df, by=c("ZIPCODE" = "region"))
-    rownames(subdat_data)=subdat.rownames
-    
-    # ----- to write to geojson we need a SpatialPolygonsDataFrame
-    subdat<-SpatialPolygonsDataFrame(subdat, data=subdat_data)
-    
-    # ----- set uo color pallette https://rstudio.github.io/leaflet/colors.html
-    # Create a continuous palette function
-    pal <- colorNumeric(
-      palette = "Blues",
-      domain = subdat$POPULATION
-    )
-    
-    leaflet(subdat) %>%
-      addTiles()%>%
-      addPolygons(
-        stroke = T, weight=1,
-        fillOpacity = 0.6,
-        color = ~pal(POPULATION)
-      )
-  })
-})
+  # Section4: User proxy data to redraw map
+  # 4.1 danger zone
+  
+  
+}
