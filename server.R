@@ -60,7 +60,8 @@ redraw_danger_map <- function(mapobj, density_geo, label_name = NULL){
     clearControls() %>%  # clear original legends
     addLegend("bottomright", pal = qpal, value = ~ density, title = NULL)
 }
-
+# define color function
+color.function <- colorRampPalette( c( "#104E8B","#CCCCCC" ) )
 
 server <- function(input, output){
   # load geo data: 1 for each user
@@ -88,7 +89,12 @@ server <- function(input, output){
         names(filtered_zip_bite_df) <- c("Breed", "density")
     # count
     top5_bite_df <- filtered_zip_bite_df[order(filtered_zip_bite_df$density,decreasing = TRUE),][1:5,]
-    barplot(top5_bite_df$density, names.arg = top5_bite_df$Breed, cex.names = 0.7, main = paste("Top 5 Bite Dogs in ", input$bite_zip), las = 2 )
+    # color
+    color_ramp <- color.function(nrow(top5_bite_df))
+    top5_bite_df$color = color_ramp
+    barplot(top5_bite_df$density, names.arg = top5_bite_df$Breed, 
+        cex.names = 0.7, main = paste("Top 5 Bite Dogs in ", input$bite_zip), 
+        col = top5_bite_df$color, las = 2 )
   })
 
   # 2. density top dogs
@@ -119,7 +125,11 @@ server <- function(input, output){
         group_by(BreedName) %>% tally()
       names(area_breed_df) <- c("Breed", "density")
       top20_bite_df <- area_breed_df[order(area_breed_df$density,decreasing = TRUE),][1:20,]
-      barplot(top20_bite_df$density, names.arg = top20_bite_df$Breed, cex.names = 0.7, main = "Most Popular Dogs", las = 2 )
+      color_ramp <- color.function(nrow(top20_bite_df))
+      top20_bite_df$color <- color_ramp
+      barplot(top20_bite_df$density, names.arg = top20_bite_df$Breed, 
+            cex.names = 0.7, main = "Most Popular Dogs", 
+            col = top20_bite_df$color ,las = 2 )
   })
 
 

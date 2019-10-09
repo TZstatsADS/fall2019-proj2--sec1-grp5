@@ -1,6 +1,7 @@
 .panel-fixed{
     background-color: white;
     border-radius: 20px;
+    overflow:hidden;
 }
 .panel-fixed:hover,
 .panel-fixed:hover select,

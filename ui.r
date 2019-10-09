@@ -38,7 +38,7 @@ ui <- navbarPage( "Love Dogs!",
                              ),
                              mainPanel = mainPanel(
                               tabsetPanel(
-                                tabPanel("Distribution", leafletOutput("densitymap", height= 600)),
+                                tabPanel("Distribution", leafletOutput("densitymap", height= 700)),
                                 tabPanel("Most Popular Breeds", 
                                     selectInput("density_top_level", "Level:", c("Borough" = "borough","Neighborhood" = "neighborhood", "Zip Code Region" = "zip")),
                                     conditionalPanel( condition = "input.density_top_level == 'borough'",
@@ -72,9 +72,9 @@ ui <- navbarPage( "Love Dogs!",
                              ),
                              # right panel
                              mainPanel = mainPanel(
-                                # includeCSS("./css/fixedpanel.css"),
+                                includeCSS("./css/fixedpanel.css"),
                                # map 
-                               leafletOutput("dangermap", height = 600),
+                               leafletOutput("dangermap", height = 700),
                                # fixed plot
                                 absolutePanel(id="dangerstats", fixed = FALSE,
                                             class ="panel-fixed",
@@ -99,7 +99,7 @@ ui <- navbarPage( "Love Dogs!",
                              ),
                              
                              mainPanel(
-                               leafletOutput("parkmap", height = 600)
+                               leafletOutput("parkmap", height = 700)
                                
                              )
                            )
