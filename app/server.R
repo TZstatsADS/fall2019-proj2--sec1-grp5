@@ -5,14 +5,14 @@ library(dplyr)
 library(geojsonio)
 
 # load raw data
-dog_license_df <- readRDS('../output/cleaned_dog_license.rds')
+dog_license_df <- readRDS('output/cleaned_dog_license.rds')
 # cols: "X"  "UniqueID"   "DateOfBite" "Breed"      "Age"        "Gender"     "Borough"    "ZipCode"   
-dog_bite_df <- readRDS('../output/cleaned_dog_bite.rds')
-hospital_df <- readRDS('../output/cleaned_hospital.rds')
+dog_bite_df <- readRDS('output/cleaned_dog_bite.rds')
+hospital_df <- readRDS('output/cleaned_hospital.rds')
 
-server_nyc_zip_geo <- geojson_read("../data/geo/NYC-Zip-Code.geojson", what = "sp")
-server_nyc_nei_geo <- geojson_read("../data/geo/NYC-Neighborhood.geojson", what = "sp")
-server_nyc_bor_geo <- geojson_read("../data/geo/NYC-Borough-Boundaries.geojson", what = "sp")
+server_nyc_zip_geo <- geojson_read("data/geo/NYC-Zip-Code.geojson", what = "sp")
+server_nyc_nei_geo <- geojson_read("data/geo/NYC-Neighborhood.geojson", what = "sp")
+server_nyc_bor_geo <- geojson_read("data/geo/NYC-Borough-Boundaries.geojson", what = "sp")
 # server_nyc_park_geo <- geojson_read("../data/geo/parks.geojson", what = "sp")
 
 

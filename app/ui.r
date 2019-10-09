@@ -3,10 +3,10 @@ library(leaflet)
 library(shinythemes)
 
 # Select items
-breed_names <- readRDS('../output/select_items/breeds.rds')
-nyc_zipcode <- readRDS('../output/select_items/nyc_zipcode.rds')
-neighborhoods <- readRDS('../output/select_items/neighborhood.rds')
-borough <- readRDS('../output/select_items/borough.rds')
+breed_names <- readRDS('output/select_items/breeds.rds')
+nyc_zipcode <- readRDS('output/select_items/nyc_zipcode.rds')
+neighborhoods <- readRDS('output/select_items/neighborhood.rds')
+borough <- readRDS('output/select_items/borough.rds')
 
 
 
