@@ -5,9 +5,9 @@
 
 
 ## Project Title: Lovely? Danger? Dogs in NYC!
-Term: Fall 2019
+* Term: Fall 2019
 
-+ Team: Section1 Group5
++ Team: Section 1, Group 5
 + Team members:
 	+ Syed Ahsan Bukhari (sab2302)
 	+ Haofeng Chen (hc2962)
@@ -18,7 +18,7 @@ Term: Fall 2019
 
 
 
-## Contribution statement
+## Contribution Statement
 
 This section lists the contribution and tasks for each member.
 
