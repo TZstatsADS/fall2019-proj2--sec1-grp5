@@ -4,7 +4,6 @@ library(leaflet)
 library(dplyr)
 library(geojsonio)
 
-
 # load raw data
 dog_license_df <- read.csv('../output/cleaned_dog_license.csv', stringsAsFactors=FALSE)
 # cols: "X"  "UniqueID"   "DateOfBite" "Breed"      "Age"        "Gender"     "Borough"    "ZipCode"   
@@ -14,7 +13,7 @@ hospital_df <- read.csv('../output/cleaned_hospital.csv',stringsAsFactors=FALSE)
 server_nyc_zip_geo <- geojson_read("../data/geo/NYC-Zip-Code.geojson", what = "sp")
 server_nyc_nei_geo <- geojson_read("../data/geo/NYC-Neighborhood.geojson", what = "sp")
 server_nyc_bor_geo <- geojson_read("../data/geo/NYC-Borough-Boundaries.geojson", what = "sp")
-
+# server_nyc_park_geo <- geojson_read("../data/geo/parks.geojson", what = "sp")
 
 
 # labels and icons template
@@ -28,7 +27,6 @@ hospital_icon <- makeIcon(
   iconWidth = 18,
   iconHeight = 18
 )
-
 
 # independent helper functio
 source("./helper.R")
@@ -50,7 +48,7 @@ redraw_danger_map <- function(mapobj, density_geo, label_name = NULL){
       smoothFactor = 0.3, 
       fillOpacity = 0.8, 
       dashArray = 3,
-      label = paste("Number:", as.character(density_geo[[label_name]])),
+      label = as.character(density_geo[[label_name]]),
       highlight = highlightOptions(
         weight = 5,
         color = "#ccc",
@@ -71,7 +69,7 @@ server <- function(input, output){
 
 
   # Section 1: normal plots
-  
+  # 1. bite top 5
   get_filtered_zip_bite_df <- reactive({
     filtered_zip_bite_df <- dog_bite_df
     if(input$bite_zip != "All"){
@@ -91,15 +89,12 @@ server <- function(input, output){
     top5_bite_df <- filtered_zip_bite_df[order(filtered_zip_bite_df$density,decreasing = TRUE),][1:5,]
     barplot(top5_bite_df$density, names.arg = top5_bite_df$Breed, cex.names = 0.7, main = paste("Top 5 Bite Dogs in ", input$bite_zip), las = 2 )
   })
-    
-
-
 
   # Section2: Density 
   ## 2.1 reactive data for Density
   switched_density_geo <- reactive({
-    # switch(input$density_level, "borough" = nyc_bor_geo, "zip" = nyc_zip_geo, "neighborhood" = nyc_nei_geo )
     switch(input$density_level, "borough" = c("bor", nyc_bor_geo), "zip" = c('zip',nyc_zip_geo), "neighborhood" =c('nei', nyc_nei_geo) )
+    # switch(input$density_level, "zip" = c('zip',nyc_zip_geo), "neighborhood" =c('nei', nyc_nei_geo) )
   })
   # filter density reactive data
   get_filtered_density_df <- reactive({
@@ -160,9 +155,10 @@ server <- function(input, output){
     }
     one_col_df <- get_one_col_df(get_filtered_density_df(), ori_col_name, new_col_name)
     density_df <- get_group_count(one_col_df, new_col_name, new_col_name)
-    level_geo@data <- merge(density_df, level_geo@data, by = new_col_name)
+    level_geo <- get_density_geo(density_df, level_geo, new_col_name)
+    # level_geo@data <- merge(density_df, level_geo@data, by = new_col_name, all.x = TRUE)
 
-    redraw_danger_map(leafletProxy("densitymap", data = level_geo), level_geo, label_name='density')
+    redraw_danger_map(leafletProxy("densitymap", data = level_geo), level_geo, label_name= new_col_name)
 
   })  
 
@@ -199,7 +195,7 @@ server <- function(input, output){
       addTiles() %>%
       setView(-74.0060,40.7128, 10)
     
-    redraw_danger_map(m, density_geo, label_name = "density")
+    redraw_danger_map(m, density_geo, label_name = 'postalCode')
   })
 
   # 3.3 proxy change
@@ -209,7 +205,7 @@ server <- function(input, output){
     density_df <- get_group_count(one_col_df, "postalCode", "postalCode")
     density_geo <- get_density_geo(density_df, nyc_zip_geo, "postalCode")
 
-    redraw_danger_map(leafletProxy("dangermap", data = density_geo), density_geo, label_name="density")
+    redraw_danger_map(leafletProxy("dangermap", data = density_geo), density_geo, label_name="postalCode")
       
     })    
   observe({
@@ -227,13 +223,11 @@ server <- function(input, output){
 
   # Section3: set proxy map data for each part
   
-  
-  
   output$parkmap <- renderLeaflet({
     leaflet()%>%
       addTiles() %>%
-      setView(-74.0060,40.7128, 12) %>%
-      fitBounds( -74.36, 40.40, -73.2, 41.14)
+      setView(-74.0060,40.7128, 12)
+      
   })
   
   

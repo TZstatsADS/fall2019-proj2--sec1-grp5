@@ -103,18 +103,42 @@
 #names(cleaned_dog_bite_df)
 library(geojsonio)
 library(leaflet)
-nyc_bor_geo <- geojson_read("data/geo/NYC-Borough-Boundaries.geojson", what = "sp")
+# nyc_bor_geo <- geojson_read("data/geo/NYC-Borough-Boundaries.geojson", what = "sp")
+# print(nrow(nyc_bor_geo@data))
+# 
+# a <- data.frame(boro_name = c('Bronx', 'Staten Island', 'Brooklyn', 'Queens', 'Manhattan'), density = c(10,20,30,40,50))
+# b = 'density'
+# 
+# 
+# nyc_bor_geo$density <- a[b]
+# 
+# 
+# pal <- colorNumeric(
+#   palette = "YlOrRd",
+#   domain = nyc_bor_geo$density
+# )
+# 
+# 
+# leaflet(nyc_bor_geo) %>%
+#   addTiles() %>%
+#   setView(lng=-73.98928, lat =40.75074 , zoom =10)%>%
+#   addPolygons(
+#     color = ~pal(density)
+#     )
+# 
+# nyc_bor_geo@density <- apply()
+# 
+# leaflet(nyc_bor_geo) %>%
+#   addTiles() %>%
+#   setView(lng=-73.98928, lat =40.75074 , zoom =10)%>%
+#   addProviderTiles("Esri") %>%
+#   addPolygons(
+#     stroke = T, weight=1,
+#     fillOpacity = 0.95,
+#     label = ~boro_name,
+#   )
 
-nyc_bor_geo@density <- apply()
 
-leaflet(nyc_bor_geo) %>%
-  addTiles() %>%
-  setView(lng=-73.98928, lat =40.75074 , zoom =10)%>%
-  addProviderTiles("Esri") %>%
-  addPolygons(
-    stroke = T, weight=1,
-    fillOpacity = 0.95,
-    label = ~boro_name,
-  )
-
-
+a = data.frame(title = c('a','b','c','d'))
+b = data.frame(title = c('d','b','c','a'), value = c(1,2,3,4))
+match(a, b)

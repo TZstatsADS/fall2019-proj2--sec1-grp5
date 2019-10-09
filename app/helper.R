@@ -1,11 +1,13 @@
 
-# count the dataset_df's 'groupby_col', then merge with geo_data
-# return a new geo_data with an additional count column
+# Merge the density value into the 'geo_data' and return the new one
 get_density_geo <- function(dataset_df, geo_data, col_name){
-  
-  geo_data@data <- merge(geo_data@data, dataset_df,by = col_name)
-  # data.frame(geo_data@data,  dataset_df[match(geo_data@data[, col_name], dataset_df[, col_name]   )])
-  
+
+  merged_df <- merge(geo_data@data, dataset_df,by = col_name, all.x = TRUE)
+  # clean NA data
+  merged_df[is.na(merged_df)] <- 0
+
+  geo_data$density <- merged_df[match(geo_data@data[[col_name]], merged_df[[col_name]]), ][['density']]
+
   return(geo_data)
 }
 

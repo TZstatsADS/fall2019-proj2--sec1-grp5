@@ -27,7 +27,7 @@ ui <- navbarPage( "Love Dogs!",
                              sidebarPanel = sidebarPanel(
                                titlePanel("Dog Density"),
                                
-                               selectInput("density_level", "Level:", c("Borough" = "borough", "Neighborhood" = "neighborhood", "Zip Code Region" = "zip"), selected = 'zip'),
+                               selectInput("density_level", "Level:", c("Borough" = "borough","Neighborhood" = "neighborhood", "Zip Code Region" = "zip"), selected = 'zip'),
                                
                                selectInput("density_breed", "Breed:", breed_names),
                                selectInput("density_gender", "Dog Gender:", c("All" = "All", "Male" = "M",  "Female" = "F")),
@@ -57,11 +57,10 @@ ui <- navbarPage( "Love Dogs!",
                              ),
                              # right panel
                              mainPanel = mainPanel(
-                                includeCSS("./css/fixedpanel.css"),
+                                # includeCSS("./css/fixedpanel.css"),
                                # map 
                                leafletOutput("dangermap", height = 700),
                                # fixed plot
-                               
                                 absolutePanel(id="dangerstats", fixed = FALSE,
                                             class ="panel-fixed",
                                              draggable = FALSE, top = 30, right = 20,
@@ -74,21 +73,21 @@ ui <- navbarPage( "Love Dogs!",
                                )                 
                              )
                            )
-                  )
+                  ),
                   # ,
                   
                   # # 3. parks feature
-                  # tabPanel("Walk Dogs",
-                  #          sidebarLayout(
-                  #            sidebarPanel(
-                               
-                  #            ),
+                  tabPanel("Walk Dogs",
+                           sidebarLayout(
+                             sidebarPanel(
+                               titlePanel("Park Distribution")
+                             ),
                              
-                  #            mainPanel(
-                  #              leafletOutput("parkmap", height = 600)
+                             mainPanel(
+                               leafletOutput("parkmap", height = 600)
                                
-                  #            )
-                  #          )
+                             )
+                           )
                            
-                  # )
+                  )
 )
