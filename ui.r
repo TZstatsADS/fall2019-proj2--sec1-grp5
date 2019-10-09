@@ -1,0 +1,108 @@
+library(shiny)
+library(leaflet)
+library(shinythemes)
+
+# Select items
+breed_names <- readRDS('output/select_items/breeds.rds')
+nyc_zipcode <- readRDS('output/select_items/nyc_zipcode.rds')
+neighborhoods <- readRDS('output/select_items/neighborhood.rds')
+borough <- readRDS('output/select_items/borough.rds')
+
+
+breed_names <- c('All', breed_names)
+nyc_zipcode <- c('All', nyc_zipcode)
+neighborhoods <- c('All', neighborhoods)
+borough <- c('All', borough)
+
+
+# UI Part
+ui <- navbarPage( "Love Dogs!",
+                  theme = shinytheme("darkly"),
+                  id="navbar",
+                  selected = "Density",
+                  
+                  
+                  # 1. Density tab
+                  tabPanel("Density",
+                           sidebarLayout(
+                             sidebarPanel = sidebarPanel(
+                               titlePanel("Dog Density"),
+                               
+                               selectInput("density_level", "Level:", c("Borough" = "borough","Neighborhood" = "neighborhood", "Zip Code Region" = "zip"), selected = 'zip'),
+                               
+                               selectInput("density_breed", "Breed:", breed_names),
+                               selectInput("density_gender", "Dog Gender:", c("All" = "All", "Male" = "M",  "Female" = "F")),
+                               
+                               dateRangeInput("density_license_issued_date", "License Issued Date:", start="2014-09-01"),
+                               radioButtons("density_license_status", "License Status:", choices = c("All" = 1, "Valid" = 2, "Expired" = 3), selected = 1, inline = TRUE)
+                             ),
+                             mainPanel = mainPanel(
+                              tabsetPanel(
+                                tabPanel("Distribution", leafletOutput("densitymap", height= 600)),
+                                tabPanel("Most Popular Breeds", 
+                                    selectInput("density_top_level", "Level:", c("Borough" = "borough","Neighborhood" = "neighborhood", "Zip Code Region" = "zip")),
+                                    conditionalPanel( condition = "input.density_top_level == 'borough'",
+                                                       selectInput("density_top_bor", "Borough:", borough  )),
+                                    conditionalPanel( condition = "input.density_top_level == 'neighborhood'",
+                                                       selectInput("density_top_nei", "Neighborhood:", neighborhoods  )),
+                                    conditionalPanel( condition = "input.density_top_level == 'zip'",
+                                                       selectInput("density_top_zip", "Zip Code:", nyc_zipcode  )),
+                                   
+                                    plotOutput("densitytopdogs")
+                                    
+                                )
+                              )
+
+                             )
+                           )
+                  ),
+                  
+                  # 2. Danger zone tab
+                  tabPanel("Danger Area",
+                           sidebarLayout(
+                             sidebarPanel = sidebarPanel(
+                              titlePanel("Bite Records"),
+                              
+                              selectInput("bite_breed", "Breed:", breed_names),
+                              selectInput("bite_gender", "Dog Gender:", c("All" = "All", "Male" = "M",  "Female" = "F")),                 
+                              
+                              dateRangeInput("bite_date", "Bite Date:", start="2000-01-01"),
+                              
+                              checkboxInput("showhospital", "Show Hospital:")
+                             ),
+                             # right panel
+                             mainPanel = mainPanel(
+                                # includeCSS("./css/fixedpanel.css"),
+                               # map 
+                               leafletOutput("dangermap", height = 600),
+                               # fixed plot
+                                absolutePanel(id="dangerstats", fixed = FALSE,
+                                            class ="panel-fixed",
+                                             draggable = FALSE, top = 30, right = 20,
+                                             width = 300, height = "auto",
+                                             
+                                             #titlePanel("Top 5 Bite Dogs!"),
+                                             selectInput("bite_zip", "ZipCode:", nyc_zipcode),
+                                             plotOutput("zip_top5_bite", height = 350)
+                               
+                               )                 
+                             )
+                           )
+                  ),
+                  # ,
+                  
+                  # # 3. parks feature
+                  tabPanel("Walk Dogs",
+                           sidebarLayout(
+                             sidebarPanel(
+                               titlePanel("Park Distribution")
+                             ),
+                             
+                             mainPanel(
+                               leafletOutput("parkmap", height = 600)
+                               
+                             )
+                           )
+                           
+                  )
+)
