@@ -1,6 +1,6 @@
 # Project 2: Shiny App Development Version 2.0
 
-![App Interface](figs/App Interface.png)
+![App Interface](figs/AppInterface.png)
 
 
 
