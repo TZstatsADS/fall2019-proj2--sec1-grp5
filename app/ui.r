@@ -9,6 +9,7 @@ neighborhoods <- readRDS('../output/select_items/neighborhood.rds')
 borough <- readRDS('../output/select_items/borough.rds')
 
 
+
 breed_names <- c('All', breed_names)
 nyc_zipcode <- c('All', nyc_zipcode)
 neighborhoods <- c('All', neighborhoods)
@@ -21,7 +22,7 @@ ui <- navbarPage( "Love Dogs!",
                   id="navbar",
                   selected = "Density",
                   
-                  
+            
                   # 1. Density tab
                   tabPanel("Density",
                            sidebarLayout(
@@ -40,14 +41,13 @@ ui <- navbarPage( "Love Dogs!",
                               tabsetPanel(
                                 tabPanel("Distribution", leafletOutput("densitymap", height= 700)),
                                 tabPanel("Most Popular Breeds", 
-                                    selectInput("density_top_level", "Level:", c("Borough" = "borough","Neighborhood" = "neighborhood", "Zip Code Region" = "zip")),
-                                    conditionalPanel( condition = "input.density_top_level == 'borough'",
+                                    # selectInput("density_top_level", "Level:", c("Borough" = "borough","Neighborhood" = "neighborhood", "Zip Code Region" = "zip")),
+                                    conditionalPanel( condition = "input.density_level == 'borough'",
                                                        selectInput("density_top_bor", "Borough:", borough  )),
-                                    conditionalPanel( condition = "input.density_top_level == 'neighborhood'",
+                                    conditionalPanel( condition = "input.density_level == 'neighborhood'",
                                                        selectInput("density_top_nei", "Neighborhood:", neighborhoods  )),
-                                    conditionalPanel( condition = "input.density_top_level == 'zip'",
+                                    conditionalPanel( condition = "input.density_level == 'zip'",
                                                        selectInput("density_top_zip", "Zip Code:", nyc_zipcode  )),
-                                   
                                     plotOutput("densitytopdogs")
                                     
                                 )

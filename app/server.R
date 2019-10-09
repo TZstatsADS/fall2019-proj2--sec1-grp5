@@ -99,18 +99,17 @@ server <- function(input, output){
   # 2. density top dogs
   get_area_breed_df <- reactive({
     selected_area_license_df <- dog_license_df
-    if(input$density_top_level == "borough" & input$density_top_bor != "All" ){
+    if(input$density_level == "borough" & input$density_top_bor != "All" ){
         # filter borough
         selected_area_license_df <- selected_area_license_df %>% 
           filter(Borough == input$density_top_bor) 
     }
-    else if(input$density_top_level == "neighborhood" & input$density_top_nei != "All"){
+    else if(input$density_level == "neighborhood" & input$density_top_nei != "All"){
         # filter nei
-
         selected_area_license_df <- selected_area_license_df %>% 
-          filter(geocode == input$density_top_nei)
+          filter(GEONAME == input$density_top_nei)
     }
-    else if(input$density_top_level == "zip" & input$density_top_zip != "All"){
+    else if(input$density_level == "zip" & input$density_top_zip != "All"){
         # filter zip
         selected_area_license_df <- selected_area_license_df %>%
         filter(zip == input$density_top_zip) 
@@ -186,9 +185,9 @@ server <- function(input, output){
         new_col_name <- "boro_name"
     }
     else if(level_name == 'nei'){
-        # geo col: GEOCODE   data col: geocode
-      ori_col_name <- "geocode"
-      new_col_name <- "GEOCODE"
+        # geo col: GEONAME   data col: GEONAME
+      ori_col_name <- "GEONAME"
+      new_col_name <- "GEONAME"
     }
     else{
         # geo col: postalCode   data col: ZipCode      
